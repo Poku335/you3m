@@ -29,14 +29,11 @@ COPY web_youtube_converter/backend/ ./
 # Copy built frontend
 COPY --from=frontend-build /app/frontend/build ./static/
 
-# Create media directory
-RUN mkdir -p media
+# Create directories
+RUN mkdir -p media staticfiles
 
-# Create staticfiles directory
-RUN mkdir -p staticfiles
-
-# Collect static files (skip if fails)
-RUN python manage.py collectstatic --noinput --settings=youtube_converter.settings_production || echo "Static files collection failed, continuing..."
+# Skip static files collection for now
+# RUN python manage.py collectstatic --noinput --settings=youtube_converter.settings_production || echo "Static files collection failed, continuing..."
 
 # Expose port
 EXPOSE 8000

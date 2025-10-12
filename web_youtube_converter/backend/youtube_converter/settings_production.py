@@ -1,8 +1,8 @@
 import os
 from .settings import *
 
-# Production settings
-DEBUG = False
+# Production settings (enable DEBUG temporarily for troubleshooting)
+DEBUG = True
 
 # Railway provides DATABASE_URL automatically
 if 'DATABASE_URL' in os.environ:
@@ -34,10 +34,12 @@ CORS_ALLOW_ALL_ORIGINS = True  # สำหรับ testing
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Include React build directory
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # React build files
-]
+# Include React build directory (only if exists)
+static_dir = os.path.join(BASE_DIR, 'static')
+if os.path.exists(static_dir):
+    STATICFILES_DIRS = [static_dir]
+else:
+    STATICFILES_DIRS = []
 
 # Media files
 MEDIA_URL = '/media/'
@@ -51,7 +53,17 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 USE_CELERY = False
 
 # Add whitenoise for static files
-MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 
 # Serve React app
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
