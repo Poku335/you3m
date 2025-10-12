@@ -1,36 +1,44 @@
-import subprocess
-import sys
 import os
+import shutil
+from PyInstaller.__main__ import run as pyinstaller_run
+
+def clean_build():
+    """ล้างไฟล์เก่าก่อน build ใหม่ เพื่อป้องกัน false positive"""
+    for folder in ("build", "dist", "__pycache__"):
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
+    spec_file = "youtube_to_mp3.spec"
+    if os.path.exists(spec_file):
+        os.remove(spec_file)
 
 def create_exe():
-    print("กำลังสร้าง YouTube-to-MP3.exe...")
+    print("🚀 เริ่มสร้างไฟล์ YouTube-to-MP3.exe ...")
     
-    cmd = [
-        sys.executable, "-m", "PyInstaller",
+    clean_build()  # ล้าง build เก่าก่อนทุกครั้ง
+
+    opts = [
         "--onefile",
-        "--windowed",
-        "--name", "YouTube-to-MP3",
-        "youtube_to_mp3.py"
+        "--windowed",         # ไม่เปิด console
+        "--clean",            # ล้าง cache ภายใน pyinstaller
+        "--name=YouTube-to-MP3",
+        "youtube_to_mp3.py",
     ]
-    
+
     try:
-        subprocess.check_call(cmd)
-        
+        pyinstaller_run(opts)
         exe_path = os.path.join("dist", "YouTube-to-MP3.exe")
+
         if os.path.exists(exe_path):
-            file_size = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"✓ สร้าง YouTube-to-MP3.exe สำเร็จ ({file_size:.1f} MB)")
-            return True
+            size_mb = os.path.getsize(exe_path) / (1024 * 1024)
+            print(f"✅ สร้างสำเร็จ! [{exe_path}] ({size_mb:.2f} MB)")
+            print("💡 แนะนำ: เพิ่มโฟลเดอร์นี้ใน Windows Defender Exclusion เพื่อป้องกันการลบอัตโนมัติ")
         else:
-            print("✗ ไม่พบไฟล์ .exe ที่สร้าง")
-            return False
-            
-    except subprocess.CalledProcessError:
-        print("✗ เกิดข้อผิดพลาดในการสร้าง .exe")
-        return False
+            print("❌ ไม่พบไฟล์ .exe หลังการ build")
+    except Exception as e:
+        print(f"⚠️ เกิดข้อผิดพลาดในการสร้าง .exe: {e}")
 
 if __name__ == "__main__":
     if os.path.exists("youtube_to_mp3.py"):
         create_exe()
     else:
-        print("✗ ไม่พบไฟล์ youtube_to_mp3.py")
+        print("❌ ไม่พบไฟล์ youtube_to_mp3.py")

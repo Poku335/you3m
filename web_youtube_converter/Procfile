@@ -1,0 +1,1 @@
+web: python manage.py migrate --settings=youtube_converter.settings_production && gunicorn youtube_converter.wsgi:application --bind 0.0.0.0:$PORT --settings=youtube_converter.settings_production
