@@ -35,8 +35,8 @@ RUN mkdir -p media staticfiles
 # Skip static files collection for now
 # RUN python manage.py collectstatic --noinput --settings=youtube_converter.settings_production || echo "Static files collection failed, continuing..."
 
-# Expose port
-EXPOSE 8000
+# Expose port (Railway will set PORT env var)
+EXPOSE $PORT
 
-# Start command
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000", "--settings=youtube_converter.settings_production"]
+# Start command - use gunicorn for production
+CMD python manage.py migrate --settings=youtube_converter.settings_production && gunicorn youtube_converter.wsgi:application --bind 0.0.0.0:$PORT --env DJANGO_SETTINGS_MODULE=youtube_converter.settings_production
