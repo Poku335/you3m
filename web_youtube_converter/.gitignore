@@ -20,6 +20,11 @@ wheels/
 .installed.cfg
 *.egg
 
+# PyInstaller
+*.spec
+../build/
+../dist/
+
 # Django
 *.log
 local_settings.py
