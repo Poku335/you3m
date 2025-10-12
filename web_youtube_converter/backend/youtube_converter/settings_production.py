@@ -30,6 +30,14 @@ ALLOWED_HOSTS = [
 # CORS settings for production
 CORS_ALLOW_ALL_ORIGINS = True  # สำหรับ testing
 
+# Allow Vercel domains
+CORS_ALLOWED_ORIGINS = [
+    "https://*.vercel.app",
+    "https://*.railway.app",
+    "https://*.up.railway.app",
+    "http://localhost:3000",
+]
+
 # Static files - serve React build
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
