@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "python manage.py migrate --settings=youtube_converter.settings_production && python manage.py runserver 0.0.0.0:$PORT --settings=youtube_converter.settings_production",
+    "startCommand": "python manage.py migrate --settings=youtube_converter.settings_production && gunicorn youtube_converter.wsgi:application --bind 0.0.0.0:$PORT --env DJANGO_SETTINGS_MODULE=youtube_converter.settings_production",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
