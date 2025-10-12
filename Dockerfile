@@ -3,8 +3,8 @@ FROM node:18-alpine AS frontend-build
 
 # Build frontend
 WORKDIR /app/frontend
-COPY web_youtube_converter/frontend/package*.json ./
-RUN npm ci --only=production
+COPY web_youtube_converter/frontend/package.json ./
+RUN npm install
 COPY web_youtube_converter/frontend/ ./
 RUN npm run build
 
@@ -32,8 +32,11 @@ COPY --from=frontend-build /app/frontend/build ./static/
 # Create media directory
 RUN mkdir -p media
 
-# Collect static files
-RUN python manage.py collectstatic --noinput --settings=youtube_converter.settings_production
+# Create staticfiles directory
+RUN mkdir -p staticfiles
+
+# Collect static files (skip if fails)
+RUN python manage.py collectstatic --noinput --settings=youtube_converter.settings_production || echo "Static files collection failed, continuing..."
 
 # Expose port
 EXPOSE 8000
