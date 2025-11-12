@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import yt_dlp
 import os
+import sys
 import threading
 from pathlib import Path
 import shutil
@@ -23,24 +24,14 @@ class YouTubeToMP3Converter:
         
     def set_icon(self):
         try:
-            if os.path.exists("my_app_icon.ico"):
-                self.root.iconbitmap("my_app_icon.ico")
-                return
-        except:
-            pass
-        
-        try:
-            icon_path = os.path.abspath("my_app_icon.ico")
+            if getattr(sys, 'frozen', False):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(os.path.abspath(__file__))
+            
+            icon_path = os.path.join(base_path, "favicon.ico")
             if os.path.exists(icon_path):
                 self.root.iconbitmap(icon_path)
-                return
-        except:
-            pass
-        
-        try:
-            if os.path.exists("my_app_icon.ico"):
-                self.root.iconbitmap("my_app_icon.ico")
-                return
         except:
             pass
         

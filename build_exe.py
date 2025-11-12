@@ -3,7 +3,6 @@ import shutil
 from PyInstaller.__main__ import run as pyinstaller_run
 
 def clean_build():
-    """ล้างไฟล์เก่าก่อน build ใหม่ เพื่อป้องกัน false positive"""
     for folder in ("build", "dist", "__pycache__"):
         if os.path.exists(folder):
             shutil.rmtree(folder)
@@ -14,13 +13,15 @@ def clean_build():
 def create_exe():
     print("🚀 เริ่มสร้างไฟล์ YouTube-to-MP3.exe ...")
     
-    clean_build()  # ล้าง build เก่าก่อนทุกครั้ง
+    clean_build()
 
     opts = [
         "--onefile",
-        "--windowed",         # ไม่เปิด console
-        "--clean",            # ล้าง cache ภายใน pyinstaller
+        "--windowed",
+        "--clean",
         "--name=YouTube-to-MP3",
+        "--icon=favicon.ico",
+        "--add-data=favicon.ico;.",
         "youtube_to_mp3.py",
     ]
 
@@ -30,15 +31,14 @@ def create_exe():
 
         if os.path.exists(exe_path):
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"✅ สร้างสำเร็จ! [{exe_path}] ({size_mb:.2f} MB)")
-            print("💡 แนะนำ: เพิ่มโฟลเดอร์นี้ใน Windows Defender Exclusion เพื่อป้องกันการลบอัตโนมัติ")
+            print(f"สร้างสำเร็จ! [{exe_path}] ({size_mb:.2f} MB)")
         else:
-            print("❌ ไม่พบไฟล์ .exe หลังการ build")
+            print("ไม่พบไฟล์ .exe หลังการ build")
     except Exception as e:
-        print(f"⚠️ เกิดข้อผิดพลาดในการสร้าง .exe: {e}")
+        print(f"เกิดข้อผิดพลาดในการสร้าง .exe: {e}")
 
 if __name__ == "__main__":
     if os.path.exists("youtube_to_mp3.py"):
         create_exe()
     else:
-        print("❌ ไม่พบไฟล์ youtube_to_mp3.py")
+        print("ไม่พบไฟล์ youtube_to_mp3.py")
