@@ -11,7 +11,7 @@ def clean_build():
         os.remove(spec_file)
 
 def create_exe():
-    print("🚀 เริ่มสร้างไฟล์ YouTube-to-MP3.exe ...")
+    print(" เริ่มสร้างไฟล์ YouTube-to-MP3.exe ...")
     
     clean_build()
 

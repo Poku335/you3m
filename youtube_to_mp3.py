@@ -11,7 +11,7 @@ class YouTubeToMP3Converter:
     def __init__(self, root):
         self.root = root
         self.root.title("แปลง YouTube เป็น MP3")
-        self.root.geometry("600x300")
+        self.root.geometry("600x350")
         self.root.resizable(True, True)
         
         self.set_icon()
@@ -19,6 +19,7 @@ class YouTubeToMP3Converter:
         
         self.download_path = str(Path.home() / "Downloads")
         self.ffmpeg_available = shutil.which('ffmpeg') is not None
+        self.cookies_file = None
         
         self.setup_ui()
         
@@ -39,7 +40,7 @@ class YouTubeToMP3Converter:
         self.root.update_idletasks()
         
         window_width = 600
-        window_height = 300
+        window_height = 350
         
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
@@ -75,18 +76,26 @@ class YouTubeToMP3Converter:
         self.browse_button = ttk.Button(main_frame, text="เลือกโฟลเดอร์", command=self.browse_folder)
         self.browse_button.grid(row=2, column=2, pady=5)
         
+        ttk.Label(main_frame, text="Cookies:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        self.cookies_var = tk.StringVar(value="ไม่ได้เลือก (ใช้ browser cookies)")
+        self.cookies_entry = ttk.Entry(main_frame, textvariable=self.cookies_var, width=40, font=("Segoe UI", 9), state='readonly')
+        self.cookies_entry.grid(row=3, column=1, sticky=(tk.W, tk.E), pady=5, padx=(10, 5))
+        
+        self.cookies_button = ttk.Button(main_frame, text="เลือกไฟล์ Cookies", command=self.browse_cookies)
+        self.cookies_button.grid(row=3, column=2, pady=5)
+        
         convert_text = "แปลงเป็น MP3" if self.ffmpeg_available else "ดาวน์โหลดเสียง"
         self.convert_button = ttk.Button(main_frame, text=convert_text, 
                                        command=self.start_conversion)
-        self.convert_button.grid(row=3, column=0, columnspan=3, pady=20)
+        self.convert_button.grid(row=4, column=0, columnspan=3, pady=20)
         
         self.progress_var = tk.StringVar(value="พร้อมใช้งาน")
-        ttk.Label(main_frame, text="สถานะ:").grid(row=4, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="สถานะ:").grid(row=5, column=0, sticky=tk.W, pady=5)
         self.status_label = ttk.Label(main_frame, textvariable=self.progress_var, font=("Segoe UI", 9))
-        self.status_label.grid(row=4, column=1, sticky=tk.W, pady=5, padx=(10, 0))
+        self.status_label.grid(row=5, column=1, sticky=tk.W, pady=5, padx=(10, 0))
         
         self.progress_bar = ttk.Progressbar(main_frame, mode='determinate', maximum=100)
-        self.progress_bar.grid(row=5, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=10)
+        self.progress_bar.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=10)
         
 
         
@@ -95,6 +104,21 @@ class YouTubeToMP3Converter:
         if folder:
             self.path_var.set(folder)
             self.download_path = folder
+    
+    def browse_cookies(self):
+        file = filedialog.askopenfilename(
+            title="เลือกไฟล์ Cookies",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            initialdir=str(Path.home())
+        )
+        if file:
+            if os.path.exists(file):
+                self.cookies_file = file
+                filename = os.path.basename(file)
+                self.cookies_var.set(f"✓ {filename}")
+                messagebox.showinfo("สำเร็จ", f"เลือกไฟล์ cookies: {filename}")
+            else:
+                messagebox.showerror("ข้อผิดพลาด", "ไม่พบไฟล์ที่เลือก")
             
     def start_conversion(self):
         url = self.url_var.get().strip()
@@ -117,18 +141,29 @@ class YouTubeToMP3Converter:
     def progress_hook(self, d):
         if d['status'] == 'downloading':
             if 'total_bytes' in d and d['total_bytes']:
-                percent = (d['downloaded_bytes'] / d['total_bytes']) * 60
-                self.root.after(0, self.update_progress, percent, f"ดาวน์โหลด... {percent:.1f}%")
+                downloaded = d['downloaded_bytes']
+                total = d['total_bytes']
+                percent = (downloaded / total) * 100
+                downloaded_mb = downloaded / (1024 * 1024)
+                total_mb = total / (1024 * 1024)
+                speed = d.get('speed', 0)
+                speed_mb = speed / (1024 * 1024) if speed else 0
+                
+                status_text = f"ดาวน์โหลด: {downloaded_mb:.1f}/{total_mb:.1f} MB ({percent:.1f}%) - {speed_mb:.1f} MB/s"
+                self.root.after(0, self.update_progress, percent, status_text)
             elif '_percent_str' in d:
-                percent_str = d['_percent_str'].strip('%')
+                percent_str = d['_percent_str'].strip().strip('%')
                 try:
-                    percent = float(percent_str) * 0.6
-                    self.root.after(0, self.update_progress, percent, f"ดาวน์โหลด... {percent:.1f}%")
+                    percent = float(percent_str)
+                    speed = d.get('speed', 0)
+                    speed_mb = speed / (1024 * 1024) if speed else 0
+                    status_text = f"ดาวน์โหลด: {percent:.1f}% - {speed_mb:.1f} MB/s"
+                    self.root.after(0, self.update_progress, percent, status_text)
                 except:
-                    self.root.after(0, self.update_progress, 30, "กำลังดาวน์โหลด...")
+                    self.root.after(0, self.update_progress, 50, "กำลังดาวน์โหลด...")
         elif d['status'] == 'finished':
             if self.ffmpeg_available:
-                self.root.after(0, self.update_progress, 60, "เริ่มแปลงไฟล์...")
+                self.root.after(0, self.update_progress, 100, "กำลังแปลงเป็น MP3...")
             else:
                 self.root.after(0, self.update_progress, 100, "ดาวน์โหลดเสร็จสิ้น!")
     
@@ -149,6 +184,21 @@ class YouTubeToMP3Converter:
                 'no_warnings': True,
                 'quiet': True,
             }
+            
+            # ใช้ไฟล์ cookies ถ้าผู้ใช้เลือกไว้
+            if self.cookies_file and os.path.exists(self.cookies_file):
+                base_opts['cookiefile'] = self.cookies_file
+                self.root.after(0, self.update_progress, 8, "ใช้ cookies จากไฟล์...")
+            else:
+                # พยายามใช้ cookies จาก browser ต่างๆ เพื่อรองรับวิดีโอที่จำกัดอายุ
+                # แต่ไม่แสดง error ถ้าเข้าถึงไม่ได้
+                for browser in ['brave', 'chrome', 'firefox', 'edge', 'opera']:
+                    try:
+                        base_opts['cookiesfrombrowser'] = (browser,)
+                        break
+                    except:
+                        # เงียบๆ ถ้าเข้าถึง browser cookies ไม่ได้
+                        continue
             
             if self.ffmpeg_available:
                 ydl_opts = {
@@ -175,21 +225,33 @@ class YouTubeToMP3Converter:
                 info = ydl.extract_info(url, download=False)
                 title = info.get('title', 'ไม่ทราบชื่อ')
                 
-                self.root.after(0, self.update_progress, 15, f"{title[:30]}...")
+                self.root.after(0, self.update_progress, 0, f"เริ่มดาวน์โหลด: {title[:40]}...")
                 
                 ydl.download([url])
-                
-                if self.ffmpeg_available:
-                    for i in range(65, 95, 10):
-                        self.root.after(0, self.update_progress, i, f"แปลงเป็น MP3... {i}%")
-                        import time
-                        time.sleep(0.1)
                 
             self.root.after(0, self.update_progress, 100, "เสร็จสิ้น!")
             self.root.after(0, self.conversion_complete, True)
             
         except Exception as e:
-            error_msg = f"เกิดข้อผิดพลาด: {str(e)}"
+            error_str = str(e)
+            if "Sign in to confirm your age" in error_str or "inappropriate" in error_str or "age" in error_str.lower():
+                error_msg = ("ไม่สามารถดาวน์โหลดวิดีโอที่จำกัดอายุได้\n\n"
+                           "วิธีแก้ไข:\n"
+                           "1. ติดตั้ง Extension 'Get cookies.txt LOCALLY' ใน Chrome/Brave\n"
+                           "2. เปิด YouTube และเข้าสู่ระบบ\n"
+                           "3. ใช้ Extension ส่งออกไฟล์ cookies.txt\n"
+                           "4. กดปุ่ม 'เลือกไฟล์ Cookies' ในโปรแกรมนี้\n"
+                           "5. เลือกไฟล์ cookies.txt ที่ส่งออกมา\n"
+                           "6. ลองดาวน์โหลดอีกครั้ง")
+            elif "cookie" in error_str.lower():
+                # ซ่อน error เกี่ยวกับ cookie database
+                error_msg = ("ไม่สามารถเข้าถึง browser cookies ได้\n\n"
+                           "แนะนำ: ใช้ไฟล์ cookies.txt แทน\n"
+                           "1. ติดตั้ง Extension 'Get cookies.txt LOCALLY'\n"
+                           "2. ส่งออก cookies จาก YouTube\n"
+                           "3. กดปุ่ม 'เลือกไฟล์ Cookies' ในโปรแกรม")
+            else:
+                error_msg = f"เกิดข้อผิดพลาด: {error_str}"
             self.root.after(0, self.conversion_complete, False, error_msg)
             
     def conversion_complete(self, success, error_msg=None):
