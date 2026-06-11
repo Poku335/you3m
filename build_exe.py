@@ -11,7 +11,7 @@ def clean_build():
         os.remove(spec_file)
 
 def create_exe():
-    print(" เริ่มสร้างไฟล์ YouTube-to-MP3.exe ...")
+    print("Starting build for YouTube-to-MP3.exe...")
     
     clean_build()
 
@@ -31,14 +31,14 @@ def create_exe():
 
         if os.path.exists(exe_path):
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"สร้างสำเร็จ! [{exe_path}] ({size_mb:.2f} MB)")
+            print(f"Build successful! [{exe_path}] ({size_mb:.2f} MB)")
         else:
-            print("ไม่พบไฟล์ .exe หลังการ build")
+            print("Error: .exe file not found after build")
     except Exception as e:
-        print(f"เกิดข้อผิดพลาดในการสร้าง .exe: {e}")
+        print(f"Error during .exe build: {e}")
 
 if __name__ == "__main__":
     if os.path.exists("youtube_to_mp3.py"):
         create_exe()
     else:
-        print("ไม่พบไฟล์ youtube_to_mp3.py")
+        print("Error: youtube_to_mp3.py not found")

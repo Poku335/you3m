@@ -11,8 +11,8 @@ import shutil
 class YouTubeToMP4Converter:
     def __init__(self, root):
         self.root = root
-        self.root.title("แปลง YouTube เป็น MP4")
-        self.root.geometry("600x320")
+        self.root.title("แปลง YouTube เป็น MP4 / MP3")
+        self.root.geometry("600x350")
         self.root.resizable(True, True)
  
         self.set_icon()
@@ -39,7 +39,7 @@ class YouTubeToMP4Converter:
     def center_window(self):
         self.root.update_idletasks()
         window_width = 600
-        window_height = 320
+        window_height = 350
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         center_x = int(screen_width / 2 - window_width / 2)
@@ -55,7 +55,7 @@ class YouTubeToMP4Converter:
         main_frame.columnconfigure(1, weight=1)
  
         # Title
-        ttk.Label(main_frame, text="แปลง YouTube เป็น MP4",
+        ttk.Label(main_frame, text="แปลง YouTube เป็น MP4 / MP3",
                   font=("Segoe UI", 16, "bold")).grid(
             row=0, column=0, columnspan=3, pady=(0, 20))
  
@@ -66,47 +66,73 @@ class YouTubeToMP4Converter:
                   font=("Segoe UI", 10)).grid(
             row=1, column=1, columnspan=2, sticky=(tk.W, tk.E), pady=5, padx=(10, 0))
  
+        # Format selector
+        ttk.Label(main_frame, text="รูปแบบ:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.format_var = tk.StringVar(value="MP4")
+        self.format_var.trace_add("write", self.on_format_change)
+        
+        format_frame = ttk.Frame(main_frame)
+        format_frame.grid(row=2, column=1, columnspan=2, sticky=tk.W, pady=5, padx=(10, 0))
+        
+        self.mp4_radio = ttk.Radiobutton(format_frame, text="MP4 (วิดีโอ)", variable=self.format_var, value="MP4")
+        self.mp4_radio.pack(side=tk.LEFT, padx=(0, 15))
+        
+        self.mp3_radio = ttk.Radiobutton(format_frame, text="MP3 (เสียง)", variable=self.format_var, value="MP3")
+        self.mp3_radio.pack(side=tk.LEFT)
+ 
         # Quality selector
-        ttk.Label(main_frame, text="คุณภาพ:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="คุณภาพ:").grid(row=3, column=0, sticky=tk.W, pady=5)
         self.quality_var = tk.StringVar(value="1080p")
-        quality_combo = ttk.Combobox(main_frame, textvariable=self.quality_var,
+        self.quality_combo = ttk.Combobox(main_frame, textvariable=self.quality_var,
                                      values=["2160p (4K)", "1440p", "1080p", "720p", "480p", "360p", "สูงสุด"],
                                      state="readonly", width=15)
-        quality_combo.grid(row=2, column=1, sticky=tk.W, pady=5, padx=(10, 0))
+        self.quality_combo.grid(row=3, column=1, sticky=tk.W, pady=5, padx=(10, 0))
  
         # Save path
-        ttk.Label(main_frame, text="บันทึกที่:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="บันทึกที่:").grid(row=4, column=0, sticky=tk.W, pady=5)
         self.path_var = tk.StringVar(value=self.download_path)
         ttk.Entry(main_frame, textvariable=self.path_var, width=40,
                   font=("Segoe UI", 9)).grid(
-            row=3, column=1, sticky=(tk.W, tk.E), pady=5, padx=(10, 5))
+            row=4, column=1, sticky=(tk.W, tk.E), pady=5, padx=(10, 5))
         ttk.Button(main_frame, text="เลือกโฟลเดอร์",
-                   command=self.browse_folder).grid(row=3, column=2, pady=5)
+                   command=self.browse_folder).grid(row=4, column=2, pady=5)
  
         # Download button
         self.convert_button = ttk.Button(main_frame, text="ดาวน์โหลด MP4",
                                          command=self.start_conversion)
-        self.convert_button.grid(row=4, column=0, columnspan=3, pady=20)
+        self.convert_button.grid(row=5, column=0, columnspan=3, pady=15)
  
         # Status
-        ttk.Label(main_frame, text="สถานะ:").grid(row=5, column=0, sticky=tk.W, pady=5)
+        ttk.Label(main_frame, text="สถานะ:").grid(row=6, column=0, sticky=tk.W, pady=5)
         self.progress_var = tk.StringVar(value="พร้อมใช้งาน")
         ttk.Label(main_frame, textvariable=self.progress_var,
                   font=("Segoe UI", 9)).grid(
-            row=5, column=1, columnspan=2, sticky=tk.W, pady=5, padx=(10, 0))
+            row=6, column=1, columnspan=2, sticky=tk.W, pady=5, padx=(10, 0))
  
         # Progress bar
         self.progress_bar = ttk.Progressbar(main_frame, mode='determinate', maximum=100)
-        self.progress_bar.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
+        self.progress_bar.grid(row=7, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
  
         # ffmpeg warning
         if not self.ffmpeg_available:
-            ttk.Label(
+            self.ffmpeg_warn_label = ttk.Label(
                 main_frame,
-                text="⚠ ไม่พบ ffmpeg — อาจได้ไฟล์ .webm แทน MP4 หรือคุณภาพต่ำลง",
+                text="⚠ ไม่พบ ffmpeg — แปลง MP3 ไม่ได้ และ MP4 อาจจำกัดคุณภาพ",
                 foreground="orange",
                 font=("Segoe UI", 8)
-            ).grid(row=7, column=0, columnspan=3, sticky=tk.W, pady=(5, 0))
+            )
+            self.ffmpeg_warn_label.grid(row=8, column=0, columnspan=3, sticky=tk.W, pady=(5, 0))
+ 
+    def on_format_change(self, *args):
+        fmt = self.format_var.get()
+        if fmt == "MP4":
+            self.quality_combo.config(values=["2160p (4K)", "1440p", "1080p", "720p", "480p", "360p", "สูงสุด"])
+            self.quality_var.set("1080p")
+            self.convert_button.config(text="ดาวน์โหลด MP4")
+        else:
+            self.quality_combo.config(values=["320 kbps (สูงสุด)", "256 kbps", "192 kbps (มาตรฐาน)", "128 kbps"])
+            self.quality_var.set("192 kbps (มาตรฐาน)")
+            self.convert_button.config(text="ดาวน์โหลด MP3")
  
     def browse_folder(self):
         folder = filedialog.askdirectory(initialdir=self.download_path)
@@ -148,6 +174,9 @@ class YouTubeToMP4Converter:
         if not os.path.exists(self.download_path):
             messagebox.showerror("ข้อผิดพลาด", "ไม่พบโฟลเดอร์ที่เลือก")
             return
+        if self.format_var.get() == "MP3" and not self.ffmpeg_available:
+            messagebox.showerror("ข้อผิดพลาด", "ไม่สามารถดาวน์โหลดเป็น MP3 ได้เนื่องจากไม่พบ ffmpeg ในระบบ\nกรุณาติดตั้ง ffmpeg ก่อนใช้งาน")
+            return
  
         self.convert_button.config(state='disabled')
         self.progress_bar['value'] = 0
@@ -177,7 +206,10 @@ class YouTubeToMP4Converter:
                 except:
                     self.root.after(0, self.update_progress, 50, "กำลังดาวน์โหลด...")
         elif d['status'] == 'finished':
-            msg = "กำลังรวมไฟล์วิดีโอ+เสียง..." if self.ffmpeg_available else "ดาวน์โหลดเสร็จสิ้น!"
+            fmt = self.format_var.get()
+            msg = "กำลังรวมไฟล์วิดีโอ+เสียง..." if fmt == "MP4" and self.ffmpeg_available else (
+                "กำลังแปลงไฟล์เป็น MP3..." if fmt == "MP3" else "ดาวน์โหลดเสร็จสิ้น!"
+            )
             self.root.after(0, self.update_progress, 100, msg)
  
     def update_progress(self, value, status):
@@ -187,16 +219,42 @@ class YouTubeToMP4Converter:
     def download_video(self, url):
         try:
             self.root.after(0, self.update_progress, 5, "เตรียมข้อมูล...")
- 
-            ydl_opts = {
-                'format': self.get_format_string(),
-                'outtmpl': os.path.join(self.download_path, '%(title)s.%(ext)s'),
-                'merge_output_format': 'mp4',
-                'progress_hooks': [self.progress_hook],
-                'no_warnings': True,
-                'quiet': True,
-                'noplaylist': True,
-            }
+            
+            fmt = self.format_var.get()
+            
+            if fmt == "MP3":
+                q_str = self.quality_var.get()
+                kbps = "192"
+                if "320" in q_str:
+                    kbps = "320"
+                elif "256" in q_str:
+                    kbps = "256"
+                elif "128" in q_str:
+                    kbps = "128"
+                
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'outtmpl': os.path.join(self.download_path, '%(title)s.%(ext)s'),
+                    'progress_hooks': [self.progress_hook],
+                    'no_warnings': True,
+                    'quiet': True,
+                    'noplaylist': True,
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': kbps,
+                    }],
+                }
+            else:
+                ydl_opts = {
+                    'format': self.get_format_string(),
+                    'outtmpl': os.path.join(self.download_path, '%(title)s.%(ext)s'),
+                    'merge_output_format': 'mp4',
+                    'progress_hooks': [self.progress_hook],
+                    'no_warnings': True,
+                    'quiet': True,
+                    'noplaylist': True,
+                }
  
             self.root.after(0, self.update_progress, 10, "ดึงข้อมูลวิดีโอ...")
  
@@ -230,10 +288,11 @@ class YouTubeToMP4Converter:
  
     def download_complete(self, success, error_msg=None):
         self.convert_button.config(state='normal')
+        fmt = self.format_var.get()
         if success:
             self.progress_bar['value'] = 100
-            self.progress_var.set("ดาวน์โหลด MP4 เสร็จสิ้น! (100%)")
-            messagebox.showinfo("สำเร็จ", f"ดาวน์โหลด MP4 เสร็จสิ้น!\nบันทึกที่: {self.download_path}")
+            self.progress_var.set(f"ดาวน์โหลด {fmt} เสร็จสิ้น! (100%)")
+            messagebox.showinfo("สำเร็จ", f"ดาวน์โหลด {fmt} เสร็จสิ้น!\nบันทึกที่: {self.download_path}")
         else:
             self.progress_bar['value'] = 0
             self.progress_var.set("เกิดข้อผิดพลาด!")
